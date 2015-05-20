@@ -168,3 +168,44 @@ We can also define our `multiply` function like these:
 > multiple {a = 3; b = 4; }
 12
 ```
+
+## Default attributes
+
+```
+> multiply = { a, b ? 2 }: a * b
+
+> multiply { a = 3; }
+6
+```
+
+## Variadic attributes
+
+i.e. passing in more attributes than the expected ones:
+
+```
+> multiply = { a, b, ... }: a * b
+
+> multiply { a = 3; b = 4; c = 2; }
+```
+
+The above works but it also means that we cannot access `c` in our function body.
+
+We can access `c` if we give a name to our argumet set.  Like this:
+
+```
+> multiply = s @ { a, b, ... }: a * b * s.c
+```
+
+This gives us the possibility to write a function like this:
+
+```
+nix-repl> multiply = s @ { a, b, ... }: if builtins.hasAttr "c" s then a * b * s.c else a * b
+
+nix-repl> multiply { a = 1; b = 2; c = 3; }
+6
+
+nix-repl> multiply { a = 1; b = 2; }
+2
+```
+
+We can also use `s ? a` in place of `builtins.hasAttr "c" s`.

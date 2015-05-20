@@ -152,3 +152,19 @@ Defining a function that accepts more than 1 arguments:
 > multiply 10 2
 20
 ```
+
+## Functions with argument sets
+
+We can also define our `multiply` function like these:
+
+```
+> multiply = s: s.a * s.b
+
+> multiply { a = 3; b = 4; }
+12
+
+> multiply = { a, b }: a * b
+
+> multiple {a = 3; b = 4; }
+12
+```

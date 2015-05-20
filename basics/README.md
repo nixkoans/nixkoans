@@ -128,3 +128,27 @@ Using our function:
 > (x: x * x) 3
 9
 ```
+
+Defining the function in a re-usable way:
+
+```
+> square = x: x * x
+
+> square
+<<lambda>>
+
+> square 10
+100
+```
+
+Defining a function that accepts more than 1 arguments:
+
+```
+> multiply = a: b: a * b
+
+> multiply 10
+<<lambda>>
+
+> multiply 10 2
+20
+```

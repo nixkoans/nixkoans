@@ -275,3 +275,66 @@ They are analogous to the compile time and link time in C/C++ projects, i.e. com
 In Nix, the Nix expressions (.nix) is compiled to `.drv` and then each `.drv` is built and finally, the product is installed in the relative out paths.
 
 This is the fundamentals of all Nix derivations.  With the derivation function, we provide a set of information on how to build a package, and we get back the information about where the package was built.
+
+## A working derivation
+
+Begin writing our `builder.sh`:
+
+```
+declare -xp
+echo foo > $out
+```
+
+Let's test our `builder.sh` build script.
+
+```
+nix-repl> :l <nixpkgs>
+Added 4874 variables.
+
+nix-repl> d = derivation { name = "foo"; builder = "${bash}/bin/bash"; args = [ ./builder.sh ]; system = builtins.currentSystem; }
+
+nix-repl> :b d
+these derivations will be built:
+  /nix/store/1j7ir2h4vvqld383d1hh2vvwa15ylxrf-foo.drv
+these paths will be fetched (1.12 MiB download, 6.54 MiB unpacked):
+  /nix/store/rx5rbls0h72cdp3a1jfnzpnfvffrri6g-bash-4.3-p33
+fetching path ‘/nix/store/rx5rbls0h72cdp3a1jfnzpnfvffrri6g-bash-4.3-p33’...
+
+*** Downloading ‘https://cache.nixos.org/nar/14naifl0dfaba25gyqxhf3aq7fny1bz4c867kj0bn8id02aw2fdn.nar.xz’ to ‘/nix/store/rx5rbls0h72cdp3a1jfnzpnfvffrri6g-bash-4.3-p33’...
+################################################################### 100.0%
+
+building path(s) ‘/nix/store/3l36splsfx98s0bszckgh5r2170pkb55-foo’
+declare -x HOME="/homeless-shelter"
+declare -x NIX_BUILD_CORES="8"
+declare -x NIX_BUILD_TOP="/private/var/folders/kl/_52jng9s6sl2knv_0jds9w140000gn/T/nix-build-foo.drv-0"
+declare -x NIX_STORE="/nix/store"
+declare -x OLDPWD
+declare -x PATH="/path-not-set"
+declare -x PWD="/private/var/folders/kl/_52jng9s6sl2knv_0jds9w140000gn/T/nix-build-foo.drv-0"
+declare -x SHLVL="1"
+declare -x TEMP="/private/var/folders/kl/_52jng9s6sl2knv_0jds9w140000gn/T/nix-build-foo.drv-0"
+declare -x TEMPDIR="/private/var/folders/kl/_52jng9s6sl2knv_0jds9w140000gn/T/nix-build-foo.drv-0"
+declare -x TMP="/private/var/folders/kl/_52jng9s6sl2knv_0jds9w140000gn/T/nix-build-foo.drv-0"
+declare -x TMPDIR="/private/var/folders/kl/_52jng9s6sl2knv_0jds9w140000gn/T/nix-build-foo.drv-0"
+declare -x builder="/nix/store/rx5rbls0h72cdp3a1jfnzpnfvffrri6g-bash-4.3-p33/bin/bash"
+declare -x name="foo"
+declare -x out="/nix/store/3l36splsfx98s0bszckgh5r2170pkb55-foo"
+declare -x system="x86_64-darwin"
+warning: you did not specify ‘--add-root’; the result might be removed by the garbage collector
+/nix/store/3l36splsfx98s0bszckgh5r2170pkb55-foo
+
+this derivation produced the following outputs:
+  out -> /nix/store/3l36splsfx98s0bszckgh5r2170pkb55-foo
+```
+
+And we have now successfully built our first package "foo", albeit a pretty useless package. :-D
+
+The output shows us the builder environment because we do so in our `builder.sh`.  `declare -xp` shows us all the environment variables that are present in the builder's environment.
+
+* As you can see, the `$HOME` we are familiar is not `~`, or in my case on my Mac, it is not `/Users/calvin`; or if I were running `:b d` to execute the build script `./build.sh` in my NixOS instance as root, it is not `root`.
+* `$PATH` is also not set so even on my Mac OS X, the builder has no awareness of all the `$PATH` I have set on my Mac OS X.
+* `NIX_BUILD_CORES` and `NIX_STORE` are nix-specific variables.
+* `PWD` and `TMP` shows the nix created temporary build directory.
+* Subsequent to this, `builder`, `name`, `out` and `system` are variables set due to the `.drv` contents.
+
+Compared to `autotools`, this will be the `--prefix` path.  There's no `DESTDIR` because `$out` (like `--prefix`) allows us to build in a stateless manner.  Packages are not installed in a global common path under `/`.  Packages are installed in a local, isolated path under the `nix store` slot.

@@ -49,3 +49,10 @@ If we use `nix-build`, `nix-build` does two main jobs:
 Finally, once done, make a symlink to the binary in `out`.
 
 Here in this example, we have a new `inherit` keyword. `inherit` expands like this - `inherit foo bar` to `foo = foo; bar = bar;`. `inherit` is a convenience keyword inside sets to save us from typing the same name twice (once for the attribute name and onc for the variable in the scope).
+
+Once the compilation succeeds, we can now run our binary via its `out` path. Like this:
+
+```
+./nix/store/bh6gly7734mwz27cvdwkb919lsn27ybq-simple/simple/simple
+Hello world.
+```

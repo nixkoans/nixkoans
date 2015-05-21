@@ -1,5 +1,7 @@
 # Derivation
 
+## The fundamentals of a derivation
+
 Derivations are the building blocks of a Nix system, from a file system perspective.
 
 Of all the `builtins` (built-in functions), `derivation` is the most important and form the basis of Nix builds.  The `derivation` function takes a set argument with must contain at least:
@@ -82,7 +84,194 @@ error: a ‘mysystem’ is required to build ‘/nix/store/40s0qmrfb45vlh6610rk2
 We can also trigger the build from our `.drv` file outside of `nix-repl`.
 
 ```
-$ nix-store -r /nix/store/40s0qmrfb45vlh6610rk29ym318dswdr-myname.drv
+$ nix-store -r "/nix/store/z3hhlxbckx4g3n9sw91nnvlkjvyw754p-myname.drv"
+these derivations will be built:
+  /nix/store/z3hhlxbckx4g3n9sw91nnvlkjvyw754p-myname.drv
+building path(s) ‘/nix/store/40s0qmrfb45vlh6610rk29ym318dswdr-myname’
+error: a ‘mysystem’ is required to build ‘/nix/store/z3hhlxbckx4g3n9sw91nnvlkjvyw754p-myname.drv’, but I am a ‘x86_64-linux’
 ```
 
-And we will get the same output and errors, of course.
+And we will get the same output and errors, of course. Because we are giving fake values to our derivation function.
+
+## Other Useful Built-in Functions
+
+As we can see, the returned value from our `derivation` is simply a set.  Our built-in function `isAttrs` validates this observation.
+
+```
+nix-repl> builtins.isAttrs d
+true
+```
+
+We can also validate this with `typeOf`:
+
+```
+nix-repl> builtins.typeOf d
+"set"
+```
+
+What are the keys in our `d` set?
+
+```
+nix-repl> builtins.attrNames d
+[ "all" "builder" "drvAttrs" "drvPath" "name" "out" "outPath" "outputName" "system" "type" ]
+```
+
+And what are the values?
+
+```
+nix-repl> builtins.attrValues d
+[ [ ... ] "mybuilder" { ... } "/nix/store/z3hhlxbckx4g3n9sw91nnvlkjvyw754p-myname.drv" "myname" «derivation /nix/store/z3hhlxbckx4g3n9sw91nnvlkjvyw754p-myname.drv» "/nix/store/40s0qmrfb45vlh6610rk29ym318dswdr-myname" "out" "mysystem" "derivation" ]
+```
+
+To recall the input we gave to `d`?
+
+```
+nix-repl> d.drvAttrs
+{ builder = "mybuilder"; name = "myname"; system = "mysystem"; }
+```
+
+To get the path to our `.drv` file, we can run:
+
+```
+nix-repl> d.drvPath
+"/nix/store/z3hhlxbckx4g3n9sw91nnvlkjvyw754p-myname.drv"
+```
+
+One of the interesting attributes in our derivation is `type`.
+
+Recall:
+
+```
+nix-repl> builtins.attrNames d
+[ "all" "builder" "drvAttrs" "drvPath" "name" "out" "outPath" "outputName" "system" "type" ]
+```
+
+What's the type of type?
+
+```
+nix-repl> d.type
+"derivation"
+```
+
+The type attribute isjust a convention for Nix and for us to understand that the set that we give to our `derivation` functioon is a derivation.
+
+Finally, what we are really interested in are the outputs.  Our derivation will give us
+
+```
+nix-repl> d.outPath
+"/nix/store/40s0qmrfb45vlh6610rk29ym318dswdr-myname"
+
+nix-repl> d.drvPath
+"/nix/store/z3hhlxbckx4g3n9sw91nnvlkjvyw754p-myname.drv"
+
+nix-repl> d.out
+«derivation /nix/store/z3hhlxbckx4g3n9sw91nnvlkjvyw754p-myname.drv»
+```
+
+The `outPath` is the build path in the nix store (`/nix/store`).
+
+## Referring to other derivations
+
+We can also get the `outPath` by using the `toString` function.
+
+```
+nix-repl> builtins.toString d
+"/nix/store/40s0qmrfb45vlh6610rk29ym318dswdr-myname"
+```
+
+`toString` explicitly looks up for an `outPath` key. SO if we attempt to use the `toString` function on sets that do not have an `outPath` key, we get an error.
+
+```
+nix-repl> builtins.toString { outPath = "foo"; }
+"foo"
+
+nix-repl> builtins.toString { a = "foo"; }
+error: cannot coerce a set to a string, at "(string)":1:1
+```
+
+`toString` will be used as a convenient way to help us refer to other derivations which may be dependencies in our derivation.
+
+For instance, if we want to use binaries from a package `coreutils`:
+
+```
+nix-repl> :l <nixpkgs>
+Added 4874 variables.
+
+nix-repl> coreutils
+«derivation /nix/store/n3vxcfq1dcw7jkrm3r5nninsf5d4qcjq-coreutils-8.23.drv»
+
+nix-repl> builtins.toString coreutils
+"/nix/store/y8z8y3snkh1p2fr7hg089jzids15d835-coreutils-8.23"
+```
+
+Note that inside nix strings (i.e. ""),  we can interpolate nix expressions with the `${...}` symbol. For instance,
+
+```
+nix-repl> "${d}"
+"/nix/store/40s0qmrfb45vlh6610rk29ym318dswdr-myname"
+```
+
+Therefore, we can do the same for coreutils,
+
+```
+nix-repl> "${coreutils}"
+"/nix/store/y8z8y3snkh1p2fr7hg089jzids15d835-coreutils-8.23"
+```
+
+This means that we can easily refer to our dependencies' binaries like this:
+
+```
+nix-repl> "${coreutils}/bin/true"
+"/nix/store/y8z8y3snkh1p2fr7hg089jzids15d835-coreutils-8.23/bin/true"
+```
+
+Let's test it out!
+
+```
+nix-repl> :l <nixpkgs>
+Added 4542 variables.
+
+nix-repl> d = derivation { name = "myname"; builder = "${coreutils}/bin/true"; system = builtins.currentSystem; }
+
+nix-repl> :b d
+these derivations will be built:
+  /nix/store/7ksna1lysiizxkdis3vk9pnji95jqlh7-myname.drv
+building path(s) ‘/nix/store/0rz8yxaq7xzhn7gyglff508hpkwxh6pd-myname’
+builder for ‘/nix/store/7ksna1lysiizxkdis3vk9pnji95jqlh7-myname.drv’ failed to produce output path ‘/nix/store/0rz8yxaq7xzhn7gyglff508hpkwxh6pd-myname’
+error: build of ‘/nix/store/7ksna1lysiizxkdis3vk9pnji95jqlh7-myname.drv’ failed
+```
+
+The build is expected to fail of course since `coreutils` isn't really a builder.  We are simply trying to let `nix` become aware of `coreutils` and as you can see below, `coreutils` get added as a dependency in our derivation.
+
+```
+$ pp-aterm -i /nix/store/7ksna1lysiizxkdis3vk9pnji95jqlh7-myname.drv
+Derive(
+  [("out", "/nix/store/0rz8yxaq7xzhn7gyglff508hpkwxh6pd-myname", "", "")]
+, [("/nix/store/f31xlwjq3m5ih7g4gsla1iaf7yb3yrnd-coreutils-8.23.drv", ["out"])]
+, []
+, "x86_64-linux"
+, "/nix/store/wc472nw0kyw0iwgl6352ii5czxd97js2-coreutils-8.23/bin/true"
+, []
+, [ ("builder", "/nix/store/wc472nw0kyw0iwgl6352ii5czxd97js2-coreutils-8.23/bin/true")
+  , ("name", "myname")
+  , ("out", "/nix/store/0rz8yxaq7xzhn7gyglff508hpkwxh6pd-myname")
+  , ("system", "x86_64-linux")
+  ]
+)
+```
+
+Now, we see that `coreutils` has been added as a dependency in our derivation. and coreutils' `.drv` intermediary file gets created before the rest of the build continues.
+
+Note that the derivation is not built during evaluation of Nix expressiojns.  That is why we have to run `:b drv` in `nix-repl` or use `nix-store -r`.
+
+There are two distinct phases when building a nix package.
+
+* Instantiate/evaluation: nix expression is parsed, interpreted and finally returns a derivation set.  During evaluation, we can refer to other derivations because Nix will create `.drv` files and we all know out paths beforehand.  This is achieved under-the-hood with `nix-instantiate`.
+
+* Realise/build: the `.drv` from the derivation set is built, first building `.drv` inputs (build dependencies).  This is achieved by the `nix-store -r` command.
+
+They are analogous to the compile time and link time in C/C++ projects, i.e. compilation of source files into object files.  And subsequent linking of object files into a single executable.
+
+In Nix, the Nix expressions (.nix) is compiled to `.drv` and then each `.drv` is built and finally, the product is installed in the relative out paths.
+
+This is the fundamentals of all Nix derivations.  With the derivation function, we provide a set of information on how to build a package, and we get back the information about where the package was built.

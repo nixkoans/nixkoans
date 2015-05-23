@@ -77,3 +77,12 @@ $ nix-store -q --references $(nix-store -r `nix-instantiate hello.nix`)
 ```
 
 We now have the expected output where `glibc` is the only expected dependency in our simple `hello` program.
+
+This package is self-contained. If we copy its closure on to another machine, we will be able to run it.  The `hello` binary will use that exact version of `glibc` library and interpreter and not the system one.
+
+```
+$ ldd result/bin/hello
+    linux-vdso.so.1 (0x00007ffcbb34a000)
+    libc.so.6 => /nix/store/la5imi1602jxhpds9675n2n2d0683lbq-glibc-2.20/lib/libc.so.6 (0x00007f5939a47000)
+    /nix/store/la5imi1602jxhpds9675n2n2d0683lbq-glibc-2.20/lib/ld-linux-x86-64.so.2 (0x00007f5939de4000)
+```

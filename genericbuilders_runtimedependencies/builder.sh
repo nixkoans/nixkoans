@@ -17,3 +17,5 @@ done
 ./configure --prefix=$out
 make
 make install
+
+find $out -type f -exec patchelf --shrink-rpath '{}' \; -exec strip '{}' \; 2>/dev/null

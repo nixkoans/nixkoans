@@ -17,3 +17,11 @@ make: command not found
 ```
 
 When we source our `builder.sh`, `builder.sh` will execute and build our derivation.  Note that we may get an error in the installation phase because the user may not have the permission to write to `/nix/store`.
+
+Once we have sourced `builder.sh`, it ran all the steps including setting up the PATH and all our `$baseInputs`, which means that `make` is now available to us.
+
+When we are developing our nix package, we don't actually want to run our `builder.sh` in full.  So it is now a good time to refactor `builder.sh` into two separate files.
+
+A `setup.sh` which sets up our nix package's environment including `$baseInputs` dependencies.
+
+And a `builder.sh` which runs the actual compilation and installation.

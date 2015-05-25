@@ -2,6 +2,7 @@
 
 result
 *.tar.gz
+hello-2.9/
 
 ### Vim ###
 [._]*.s[a-w][a-z]

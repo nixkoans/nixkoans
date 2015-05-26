@@ -88,3 +88,42 @@ ls: cannot access /nix/store/x7v07qyf20h2h91rzhvq9b3dvpzxg5ar-bsd-games-2.17: No
 As we can see, our garbage collector has now deleted the `bsd games` completely because we removed it's link in GC root.
 
 We removed our GC root from `/nix/var/nix/profiles` and not from `/nix/var/nix/gcroots`. `/nix/var/nix/gcroots/profiles` is a symlink to `/nix/var/nix/profiles`. This means that any profile and its generations are GC roots.
+
+Conclusion:
+1. Anything under `/nix/var/nix/gcroots` is a GC root.
+2. And anything not being garbage collected is because it's referred from one of the GC roots.
+
+## Indirect Roots
+
+We also notice that when we build our `hello` pakcage with nix-build, a `result` symlink is built in the current directory.  Since the `hello` program is still working, it has not been garbage collected and since there's no other derivation that depends upon the `hello` package, it must be a GC root.
+
+`nix-build` automatically adds the `result` symlink as a GC root.  These GC roots are added under `/nix/var/nix/gcroots/auto`.
+
+```
+$ ls -l /nix/var/nix/gcroots/auto/
+total 0
+lrwxrwxrwx 1 root root 30 May 25 18:15 qsxa7dgxwg3wn1vzwyrpgi5vc34b1q4m -> /root/nixkoans/nixshell/result
+```
+
+This is what we refer to as an indirect GC root.
+
+We can remove this derivation from either
+
+* `/nix/var/nix/gcroots`  itself; or
+* the `result` symlink directly
+
+Once we have done that `nix-collect-garbage` will remove our derivation from `nix-store`.
+
+## Clean up and remove everything
+
+```
+$ nix-channel --update
+$ nix-env -u --always
+$ rm /nix/var/nix/gcroots/auto/*
+$ nix-collect-garbage -d
+```
+
+Note that the `-d` option is used to delete old generations of all profiles and collect garbage.  After running this command, we will not be able to rollback to any previous generation. So make sure the new generation is working well before running the command.
+
+Garbage collection in Nix is a powerful mechanism to clean up our system.  The `nix-store` command allows us to know why a certain derivation is in the nix store.
+

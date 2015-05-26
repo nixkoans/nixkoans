@@ -143,4 +143,35 @@ This is essentially the basic behaviour of `nixpkgs`.
 
 ## The inputs pattern
 
+There are still some problems with `hello.nix` and `graphviz.nix`.
 
+1. Each nix expression imports `nixpkgs` directly.  In `autotools.nix`, `nixpkgs` is passed in as an argument, which is a far better approach.
+2. What if we want a variant of `graphviz` without `libgd` support?
+3. What if we want to test `graphviz` with a specific `libgd` version?
+
+The solution at the moment is to change the expression to match our needs or change the callee to match our needs.
+
+But we can use the inputs design pattern so the user of our package can provide the inputs for our expression.
+
+By inputs of an expression, we refer to the set of derivations needed to build that expression. In this case:
+
+* `mkDerivation` from autotools. Recall that `mkDerivation` has an implicit dependency.
+* `libgd` and its dependencies.
+
+The `src` is also an input but it's pointless to change the source from the caller. For version bumps, in nixpkgs, we prefer to write another expression (e.g. because patches are needed or different inputs are needed).
+
+So now, we can rewrite `graphviz.nix` as a function:
+
+```
+{ mkDerivation, gdSupport ? true, gd, fontconfig, libjpeg, bzip2 }:
+
+mkDerivation {
+    name = "graphviz";
+    src = ./graphviz-2.38.0.tar.gz;
+    buildInputs = if gdSupport then [ gd fontconfig libjpeg bzip2 ] else [];
+}
+```
+
+If `gdSupport` is true by default, we will fill `buildInputs` and `graphviz` will be built with `gd` support, otherwise, it won't.
+
+We refactor `default.nix`, `graphviz.nix` and `hello.nix` so our expressions can be easily customized through a set of arguments.

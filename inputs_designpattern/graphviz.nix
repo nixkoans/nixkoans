@@ -1,8 +1,7 @@
-let
-    pkgs = import <nixpkgs> {};
-    mkDerivation = import ./autotools.nix pkgs;
-in mkDerivation {
+{ mkDerivation, gdSupport ? true, gd, fontconfig, libjpeg, bzip2 }:
+
+mkDerivation {
     name = "graphviz";
     src = ./graphviz-2.38.0.tar.gz;
-    buildInputs = with pkgs; [ gd fontconfig libjpeg bzip2 ];
+    buildInputs = if gdSupport then [ gd fontconfig libjpeg bzip2 ] else [];
 }

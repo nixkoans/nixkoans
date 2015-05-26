@@ -59,4 +59,3 @@ note: currently hard linking saves -0.00 MiB
 $ ls /nix/store/x7v07qyf20h2h91rzhvq9b3dvpzxg5ar-bsd-games-2.17
 bin  share
 ```
-

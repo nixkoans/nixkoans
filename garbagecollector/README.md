@@ -59,3 +59,32 @@ note: currently hard linking saves -0.00 MiB
 $ ls /nix/store/x7v07qyf20h2h91rzhvq9b3dvpzxg5ar-bsd-games-2.17
 bin  share
 ```
+
+Our old store path (in the old generation) is still present because it's a GC root. All profiles and their generations are GC roots.
+
+We can delete a GC root this way:
+
+```
+$ rm /nix/var/nix/profiles/default-1-link
+
+$ nix-collect-garbage
+finding garbage collector roots...
+deleting garbage...
+deleting ‘/nix/store/6vsq8krnbg92kf066h3nbfgigi4bnj6l-user-environment’
+deleting ‘/nix/store/jk37pqjf9bsf1lk7qqnm5vmkykqd2a6r-user-environment.drv’
+deleting ‘/nix/store/bybxp9wxpi9bgp9lqbihicmzlv9fyw0q-env-manifest.nix’
+deleting ‘/nix/store/x7v07qyf20h2h91rzhvq9b3dvpzxg5ar-bsd-games-2.17’
+deleting ‘/nix/store/w60qmp5xrg4n3y4pk9jwl55p4ba7yxqx-flex-2.5.39’
+deleting ‘/nix/store/73219iazfyfa6b5f2hnpjvqcjkwc6745-gnum4-1.4.17’
+deleting ‘/nix/store/trash’
+deleting unused links...
+note: currently hard linking saves -0.00 MiB
+6 store paths deleted, 7.91 MiB freed
+
+$ ls /nix/store/x7v07qyf20h2h91rzhvq9b3dvpzxg5ar-bsd-games-2.17
+ls: cannot access /nix/store/x7v07qyf20h2h91rzhvq9b3dvpzxg5ar-bsd-games-2.17: No such file or directory
+```
+
+As we can see, our garbage collector has now deleted the `bsd games` completely because we removed it's link in GC root.
+
+We removed our GC root from `/nix/var/nix/profiles` and not from `/nix/var/nix/gcroots`. `/nix/var/nix/gcroots/profiles` is a symlink to `/nix/var/nix/profiles`. This means that any profile and its generations are GC roots.

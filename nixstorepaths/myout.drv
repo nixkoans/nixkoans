@@ -1,0 +1,1 @@
+Derive([("out","","","")],[],["/nix/store/xv2iccirbrvklck36f1g7vldn5v58vck-myfile"],"x86_64-linux","/nix/store/xv2iccirbrvklck36f1g7vldn5v58vck-myfile",[],[("builder","/nix/store/xv2iccirbrvklck36f1g7vldn5v58vck-myfile"),("name","foo"),("out",""),("system","x86_64-linux")])

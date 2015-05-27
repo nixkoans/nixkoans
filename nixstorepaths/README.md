@@ -105,3 +105,67 @@ hs0yi5n5nw6micqhy8l1igkbhqdkzqa1
 So this is how nix generates the out path in the .drv file.
 
 In the case where the `.drv` has input derivations (i.e. it references other `.drv`s), then such `.drv` paths are replaced by this same algorithm which returns a hash.
+
+## Fixed-output path
+
+The other most used kind of path is when we know beforehand an integrity hash of a file. This is usual for tarballs.
+
+A derivation can take three special attributes: `outputHashMode`, `outputHash` and `outputHashAlgo` which are documented in nix manual.
+
+The builder must create the out path and make sure its hash is the same as the one declared with `outputHash`.
+
+Using our `myfile` example again:
+
+```
+$ sha256sum myfile
+f3f3c4763037e059b4d834eaf68595bbc02ba19f6d2a500dce06d124e2cd99bb  myfile
+
+nix-repl> derivation { name = "bar"; system = "x86_64-linux"; builder = "none"; outputHashMode = "flat"; outputHashAlgo = "sha256"; outputHash = "f3f3c4763037e059b4d834eaf68595bbc02ba19f6d2a500dce06d124e2cd99bb"; }
+«derivation /nix/store/ymsf5zcqr9wlkkqdjwhqllgwa97rff5i-bar.drv»
+
+root$ pp-aterm -i /nix/store/ymsf5zcqr9wlkkqdjwhqllgwa97rff5i-bar.drv
+Derive(
+  [("out", "/nix/store/a00d5f71k0vp5a6klkls0mvr1f7sx6ch-bar", "sha256", "f3f3c4763037e059b4d834eaf68595bbc02ba19f6d2a500dce06d124e2cd99bb")]
+, []
+, []
+, "x86_64-linux"
+, "none"
+, []
+, [ ("builder", "none")
+  , ("name", "bar")
+  , ("out", "/nix/store/a00d5f71k0vp5a6klkls0mvr1f7sx6ch-bar")
+  , ("outputHash", "f3f3c4763037e059b4d834eaf68595bbc02ba19f6d2a500dce06d124e2cd99bb")
+  , ("outputHashAlgo", "sha256")
+  , ("outputHashMode", "flat")
+  , ("system", "x86_64-linux")
+  ]
+)
+```
+
+It doesn't matter which input derivations are being used, the final out path must only depend on the declared hash.
+What nix does is to create an intermediate string representation of the fixed-output content:
+
+```
+$ echo -n "fixed:out:sha256:f3f3c4763037e059b4d834eaf68595bbc02ba19f6d2a500dce06d124e2cd99bb:" > mycontent.str
+
+$ sha256sum mycontent.str
+423e6fdef56d53251c5939359c375bf21ea07aaa8d89ca5798fb374dbcfd7639  myfile.str
+```
+
+Then proceed as it was a normal derivation output path:
+
+```
+$ echo -n "output:out:sha256:423e6fdef56d53251c5939359c375bf21ea07aaa8d89ca5798fb374dbcfd7639:/nix/store:bar" > myfile.str
+
+$ nix-hash --type sha256 --truncate --base32 --flat myfile.str
+a00d5f71k0vp5a6klkls0mvr1f7sx6ch
+```
+
+Hence, the store path only depends on the declared fixed-output hash.
+
+The basic principle is the same when handling store paths - Nix first hashes teh content, then creates a string description and the final store path is the hash of this string.
+
+Fundamentally, nix:
+
+* knows beforehand the out path of a derivation since it only depends on the inputs
+* uses fixed-output derivations are used by `nixpkgs` repository for downloading and verifying source tarballs

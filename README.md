@@ -10,3 +10,5 @@
 8. callPackage design pattern
 9. Override design pattern
 10. Nix search path
+11. Nix shell
+12. Nix store paths

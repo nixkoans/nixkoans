@@ -12,4 +12,6 @@
 10. Nix search path
 11. Nix shell
 12. Nix store paths
-13. Garbage Collector
+13. Nixpkgs overrides
+14. Nixpkgs parameters
+15. Garbage Collector

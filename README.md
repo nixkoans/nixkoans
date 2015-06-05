@@ -1,4 +1,4 @@
-# Fundamentals of Nix
+# Fundamentals of Nix and Nix package manager
 
 1. Basics
 2. Commonly used

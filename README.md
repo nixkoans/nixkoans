@@ -1,5 +1,7 @@
 # Fundamentals of Nix and Nix package manager
 
+List of topics
+
 1. Basics
 2. Commonly used
 3. Derivations

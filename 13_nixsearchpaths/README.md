@@ -74,7 +74,7 @@ $ nix-build '<mypkgs>' -A graphviz
 /nix/store/3fglxgz4pfvsb3n8g7hk7flm601hrdvi-graphviz
 ```
 
-# nix-ev
+# nix-env
 
 `nix-env` is a different from `nix-instantiate` and `nix-build`.
 
